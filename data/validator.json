@@ -1,0 +1,42 @@
+{
+  "collections" :[
+    {
+        "startupInfo" : [
+
+                {"startupID": {"type": "str"}},
+                {"ICB_industry":{"type": "str"}},
+                {"ICB_sector":{"type": "str"}},
+                {"accelaratorResult":{"type": "str"}},
+                {"accelerator":{"type": "str"}},
+                {"accleratorDate":{"type": "datetime"}},
+                {"businessModel":{"type": "str"}},
+                {"description":{"type": "str"}},
+                {"foundedDate":{"type": "datetime"}},
+                {"groupClassification":{"type": "list","element":{"type": "str"}}},
+                {"incubator":{"type": "str"}},
+                {"incubatorDate":{"type": "datetime"}},
+                {"incubatorResult":{"type": "str"}},
+                {"keyword":{"type": "list","element":{"type": "str"}}},
+                {"source":{"type": "str"}},
+                {"startupClassification":{"type": "list","element":{"type": "str"}}},
+                {"startupName":{"type": "str"}},
+                {"startupStatus":{"type": "str"}},
+                {"state":{"type": "str"}},
+                {"founderName":{"type": "list","element":{"type": "str"}}},
+                {"website":{"type": "str"}},
+                {"city":{"type": "str"}},
+                {"Lat" : {"type": "float"}},
+                {"Lon" : {"type": "float"}}
+
+        ]
+    },
+    {
+        "fundingInfo" : [
+            {"roundInvestmentAmount":{"type": "list","element":{"type": "float"}}},
+            {"equityValuation": {"type": "list","element": {"type": "float"}}},
+            {"investorName":{"type": "list","element":{"type": "str"}}},
+            {"roundDate": {"type": "list","element": {"type": "datetime"}}}
+        ]
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+    "mongodb":{
+        "host":"localhost",
+        "db":"testDB"
+    },
+    "dataFile":{
+      "path": "/home/ynos/mongo_validator/data/",
+      "filename":"startupInfo.csv"
+    },
+    "validatorFile":{
+      "path":"/home/ynos/mongo_validator/data/",
+      "filename":"validator.json"
+    },
+    "debug":true
+
+}

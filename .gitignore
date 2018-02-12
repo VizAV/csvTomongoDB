@@ -1,0 +1,7 @@
+env/
+.idea/
+*.pyc
+*__pycache__
+temp.py
+temp2.py
+outputDataFormat.py

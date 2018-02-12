@@ -5,6 +5,7 @@ import json
 import numpy as np
 import ast
 import pymongo
+from modifyDataStructure import modifyCollection
 from math import isnan
 class inputData:
     # Dataframe
@@ -24,6 +25,7 @@ class inputData:
             validatorDict=convertDictToDataTypes(File)
 
             print("Read validator File")
+            print()
             return validatorDict
         except FileNotFoundError:
             raise
@@ -35,8 +37,9 @@ class inputData:
         try:
             dataFrame = pd.read_csv(path+filename, encoding='ISO-8859-1')
 
-            print()
+
             print("Read input data file")
+            print()
             return dataFrame
         except FileNotFoundError:
             raise
@@ -48,6 +51,13 @@ class inputData:
         # Get the columns from the validator file but only consider the ones that are available in the dataframe
         columns = [col for col in getValidatorColumns(self.validator) if list(col.keys())[0] in self.Dataframe]
 
+        print("The following columns were present in the input datafile. ")
+        print()
+        for index,col in enumerate(columns):
+            print(index+1,'.',list(col.keys())[0])
+        print()
+        print(" Treating the columns. ")
+        print()
         # self.treatEmptyCols(columns)
 
         # Convert the strings to list inside the class
@@ -71,11 +81,11 @@ class inputData:
                     for col in allColumns
                         if list(col.values())[0]["type"] == list and
                            list(col.values())[0]["element"]["type"] is not datetime]
-        print(listCol)
-        # for col in listCol:
+
+        for col in listCol:
             # for each row split string to list for rows that are not null. ast.literal eval will fail for null values
 
-            # self.Dataframe[col] = self.Dataframe[col].apply(lambda x: ast.literal_eval(x) if pd.notnull(x) else x)
+            self.Dataframe[col] = self.Dataframe[col].apply(lambda x: ast.literal_eval(x) if pd.notnull(x) else x)
     def convertStringsToTimeStamp(self,allColumns):
         # # Get the columns that have list as the type in the collection
         dateCol = [list(col.keys())[0]
@@ -107,6 +117,11 @@ class inputData:
                 for elem in range(len(row[col])):
                     self.Dataframe.loc[index, col][elem] = datetime.strptime(row[col][elem][:10], '%Y-%m-%d')
 
+    def updateDatabase(self,colName,inputList):
+        print("Pushing ",colName," info into Database...")
+        print()
+        for inputDict in inputList:
+            self.db[colName].update({"_id": inputDict["ID"]}, {'$set': inputDict}, upsert=True)
 
     def initiateDB(self,dbName):
         # Connect to DB. Work on the exception handlers. They dont seem to work
@@ -115,83 +130,90 @@ class inputData:
         try:
             conn = pymongo.MongoClient()
             print("Connected successfully!!!")
+            print()
         except pymongo.errors.ConnectionFailure as e:
             print("Could not connect to MongoDB: %s" % e)
+            print()
 
         return conn[dbName]
 
-    def modifyStartupInfo(self):
-        cols = [key for key, val in outputDataFormat().startupInfo.items()]
-        recordList=[]
-        for index, row in self.DataFrame[cols].iterrows():
 
-            # Convert each row in the dataframe in to a dict
-            record = row.to_dict()
-            record['ID']=record['startupID']
-            # For cases where lat and lon is not null, add a new element called location
-            if not isnan(record["Lat"]) and not isnan(record["Lon"]):
-                record['Location'] = [record["Lat"], record["Lon"]]
 
-            # Delete lat and lon for all the cases. They wont feature in the database
-            del record['Lon']
-            del record['Lat']
-            # record_clean = filter(lambda k: not isnan(record[k]), record)
-            # record = {k: record[k] for k in record if not isnan(record[k])}
+    def modifyInfo(self,collectionName,collectionDetails):
 
-            recordList.append(record)
+        recordList = modifyCollection[collectionName](collectionDetails,self.Dataframe)
+
         return recordList
 
-    def modifyFundingInfo(self):
-        cols = [key for key, val in outputDataFormat().fundingInfo.items()]
 
-        # Strip down the dataframe in to another with each round info as a row
+    # def modifyStartupInfo(self):
+    #     cols = [key for key, val in outputDataFormat().startupInfo.items()]
+    #     recordList=[]
+    #     for index, row in self.DataFrame[cols].iterrows():
+    #
+    #         # Convert each row in the dataframe in to a dict
+    #         record = row.to_dict()
+    #         record['ID']=record['startupID']
+    #         # For cases where lat and lon is not null, add a new element called location
+    #         if not isnan(record["Lat"]) and not isnan(record["Lon"]):
+    #             record['Location'] = [record["Lat"], record["Lon"]]
+    #
+    #         # Delete lat and lon for all the cases. They wont feature in the database
+    #         del record['Lon']
+    #         del record['Lat']
+    #         # record_clean = filter(lambda k: not isnan(record[k]), record)
+    #         # record = {k: record[k] for k in record if not isnan(record[k])}
+    #
+    #         recordList.append(record)
+    #     return recordList
+    #
+    # def modifyFundingInfo(self):
+    #     cols = [key for key, val in outputDataFormat().fundingInfo.items()]
+    #
+    #     # Strip down the dataframe in to another with each round info as a row
+    #
+    #     fundingCols = ['startupName'] + ['startupID'] + cols
+    #     fundingInfo = self.DataFrame[self.DataFrame['roundDate'].notnull()][fundingCols]
+    #
+    #     roundInfoList = []
+    #     for index, row in fundingInfo.iterrows():
+    #         for roundData in range(len(row['roundDate'])):
+    #             roundInfo = []
+    #             roundInfo.append(row['startupName'])
+    #             roundInfo.append(row['startupID'])
+    #             for col in cols:
+    #                 if type(row[col]) is list:
+    #
+    #                     if roundData < len(row[col]):
+    #                         info = row[col][roundData]
+    #                     else:
+    #                         info = np.nan
+    #                 else:
+    #                     info = np.nan
+    #
+    #                 roundInfo.append(info)
+    #             roundInfoList.append(pd.Series(roundInfo, index=fundingCols))
+    #
+    #     roundInfoDF = pd.DataFrame(roundInfoList)
+    #     groupedRoundInfo = roundInfoDF.groupby(['startupID', 'roundDate'])
+    #
+    #     roundGroupedList = []
+    #     counter = 0
+    #     for key, item in groupedRoundInfo:
+    #         value = item.groupby(['startupID']).agg({
+    #             'investorName': lambda x: list(x),
+    #             'roundInvestmentAmount': 'first',
+    #             'roundDate': 'first',
+    #             'startupName': 'first',
+    #             'equityValuation':'first'
+    #         }).reset_index(['startupID'])
+    #         counter += 1
+    #         value['ID'] = 'round' + str("%04d" % counter)
+    #         roundGroupDict = dict([(key, val[0]) for key, val in value.items()])
+    #         roundGroupedList.append(roundGroupDict)
+    #     return roundGroupedList
+    #
 
-        fundingCols = ['startupName'] + ['startupID'] + cols
-        fundingInfo = self.DataFrame[self.DataFrame['roundDate'].notnull()][fundingCols]
-
-        roundInfoList = []
-        for index, row in fundingInfo.iterrows():
-            for roundData in range(len(row['roundDate'])):
-                roundInfo = []
-                roundInfo.append(row['startupName'])
-                roundInfo.append(row['startupID'])
-                for col in cols:
-                    if type(row[col]) is list:
-
-                        if roundData < len(row[col]):
-                            info = row[col][roundData]
-                        else:
-                            info = np.nan
-                    else:
-                        info = np.nan
-
-                    roundInfo.append(info)
-                roundInfoList.append(pd.Series(roundInfo, index=fundingCols))
-
-        roundInfoDF = pd.DataFrame(roundInfoList)
-        groupedRoundInfo = roundInfoDF.groupby(['startupID', 'roundDate'])
-
-        roundGroupedList = []
-        counter = 0
-        for key, item in groupedRoundInfo:
-            value = item.groupby(['startupID']).agg({
-                'investorName': lambda x: list(x),
-                'roundInvestmentAmount': 'first',
-                'roundDate': 'first',
-                'startupName': 'first',
-                'equityValuation':'first'
-            }).reset_index(['startupID'])
-            counter += 1
-            value['ID'] = 'round' + str("%04d" % counter)
-            roundGroupDict = dict([(key, val[0]) for key, val in value.items()])
-            roundGroupedList.append(roundGroupDict)
-        return roundGroupedList
-
-    def updateDatabase(self,colName,inputList):
-        print("Pushing ",colName," info into Database...")
-        print()
-        for inputDict in inputList:
-            self.db[colName].update({"_id": inputDict["ID"]}, {'$set': inputDict}, upsert=True)
 
 
 

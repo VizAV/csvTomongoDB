@@ -28,6 +28,6 @@ six==1.11.0
 sklearn==0.0
 ubuntuone-client-data==14.4
 unity-lens-photos==1.0
-urllib3==1.22
+urllib3==1.24.2
 vboxapi==1.0
 Werkzeug==0.12.2
